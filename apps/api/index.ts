@@ -1,8 +1,9 @@
 import jwt from "jsonwebtoken";
 import express from "express"
 import { prisma } from "store/client"
-import "dotenv/config";
+// import "dotenv/config";
 import { AuthInput } from "./types";
+import { authMiddleware } from "./authMiddleware";
 
 
 const app = express()
@@ -11,7 +12,7 @@ app.use(express.json())
 app.get("/", (req, res) => {
     return res.json({})
 })
-
+ 
 
 app.post("/user/signup", async (req, res) => {
     try {
@@ -77,18 +78,66 @@ app.post("/user/signin", async (req, res) => {
     }
 })
 
-// app.post("/website", async (req, res) => {
+
+app.post("/website", authMiddleware, async (req, res) => {
     
-//     const website = await prisma.website.create({
-//         data: {
-            
-//         }
-//     })
+    if (!req.body.url) {
+        res.status(411).json({});
+        return
+    }
+    
+    const website = await prisma.website.create({
+        data: {
+            url: req.body.url,
+            timeAdded: new Date(),
+            user_id: req.userId!
+        }
+    })
 
-//     return res.json({
-//         id: website.id
-//     })
-// })
+    return res.json({
+        id: website.id
+    })
+})
 
 
-app.listen(3001)
+app.get("/status/:websiteId", authMiddleware, async (req, res) => {
+
+    try {
+        console.log("userId ", req.userId);
+        const website = await prisma.website.findFirst({
+            where: {
+                user_id: req.userId!,
+                id: req.params.websiteId
+            },
+            include: {
+                ticks: {
+                    orderBy: {
+                        created_at: "desc"
+                    },
+                    take: 1
+                },
+            }
+        })
+
+        if (!website) {
+            return res.status(409).json({
+                message: "Not found!"
+            })
+        }
+
+        res.json({
+            url: website.url,
+            id: website.id,
+            user_id: website.user_id
+        })
+        
+    } catch (error) {
+        res.status(403).json({
+            message: "Error"
+        })
+    }
+
+})
+
+
+app.listen(process.env.PORT || 3001)
