@@ -1,15 +1,42 @@
 exports.handler = async (event: any) => {
   const websites = JSON.parse(event.Records[0].body);
+  const results = [];
 
-  for (let url of websites) {
+  console.log("TOTAL ", websites);
+
+  for (const url of websites) {
+    
+    console.log("URL: ", url);
     try {
       const start = Date.now();
       const res = await fetch(url);
-      console.log(url, res.status, Date.now() - start, "ms");
+
+      results.push({
+        url,
+        status: "UP",
+        latency: Date.now() - start,
+        timestamp: Date.now(),
+
+      });
+
     } catch (e) {
-      console.log(url, "DOWN");
+      results.push({
+        url,
+        status: "DOWN",
+        latency: null,
+        timestamp: Date.now(),
+
+      });
     }
+
   }
 
-  return "done";
+  await fetch("https://9d96ad64301a.ngrok-free.app/uptime", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      region: process.env.AWS_REGION,
+      results,
+    }),
+  });
 };

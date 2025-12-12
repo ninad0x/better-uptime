@@ -4,20 +4,15 @@ const sqs = new SQSClient();
 
 
 exports.handler = async () => {
-  const websites = [
-    "https://www.youtube.com/",
-    "https://www.youtube.com/",
-    "https://www.youtube.com/",
-    "https://www.wddawsdwd.com/",
-    "https://www.youtube.com/",
-    "https://www.google.com",
-    "https://www.dwdwdsdw.com",
-    "https://www.google.com",
-    "https://www.google.com",
-    "https://www.awdsdwggeg.com",
-    "https://www.google.com",
-    "https://www.google.com",
-  ];
+  
+  const response = await fetch("https://9d96ad64301a.ngrok-free.app/websites")
+  const data = await response.json()
+  
+  console.log(data);
+
+  const websites = (data as any).websites.map((w: any) => w.url)
+
+  console.log(websites);
 
   await sqs.send(
     new SendMessageCommand({
