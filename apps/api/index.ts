@@ -148,6 +148,11 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
 
 })
 
+const mapStatus = (s: string) => {
+    if (s === "UP") return "Up";
+    if (s === "DOWN") return "Down";
+    return "Unknown";
+};
 
 
 app.post("/uptime", async (req, res) => {
@@ -155,14 +160,11 @@ app.post("/uptime", async (req, res) => {
 
     const { success, data, error } = WebsiteTick.safeParse(req.body)
 
-    console.log("RAW ", req.body);
-
     if (!success) {
         return
     }
 
     for (const r of data.results) {
-        console.log(r.url);
         
         const website = await prisma.website.findFirst({
             where: {
@@ -182,11 +184,16 @@ app.post("/uptime", async (req, res) => {
 
         const tick = await prisma.websiteTick.create({
             data: {
-                status: r.status as WebsiteStatus,
-                response_time_ms: r.latency!,
+                status: mapStatus(r.status),
+                response_time_ms: r.latency ?? -1,
                 created_at: new Date(r.timestamp),
-                region_id: region!.id,
-                website_id: website!.id
+                region: {
+                    connect: { id: region!.id }
+                },
+                website: {
+                    connect: { id: website!.id }
+                }
+
             }
         });
 
