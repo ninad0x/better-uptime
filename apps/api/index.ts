@@ -1,18 +1,18 @@
 import jwt from "jsonwebtoken";
 import express from "express"
 import { prisma } from "store/client"
-// import "dotenv/config";
-import { AuthInput } from "./types";
+import { AuthInput, WebsiteTick } from "./types";
 import { authMiddleware } from "./authMiddleware";
+import type { WebsiteStatus } from "../../packages/store/generated/prisma/enums";
 
 
 const app = express()
 app.use(express.json())
 
 app.get("/", (req, res) => {
-    return res.json({})
+    return res.json({message: "hellows"})
 })
- 
+
 
 app.post("/user/signup", async (req, res) => {
     try {
@@ -79,6 +79,15 @@ app.post("/user/signin", async (req, res) => {
 })
 
 
+app.get("/websites", async (req, res) => {
+
+    const websites = await prisma.website.findMany();
+
+    return res.json({
+        websites
+    })
+})
+
 app.post("/website", authMiddleware, async (req, res) => {
     
     if (!req.body.url) {
@@ -138,6 +147,55 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
     }
 
 })
+
+
+
+app.post("/uptime", async (req, res) => {
+    console.log("/uptime hit");
+
+    const { success, data, error } = WebsiteTick.safeParse(req.body)
+
+    console.log("RAW ", req.body);
+
+    if (!success) {
+        return
+    }
+
+    for (const r of data.results) {
+        console.log(r.url);
+        
+        const website = await prisma.website.findFirst({
+            where: {
+                url: r.url
+            },
+            select: {
+                id: true
+            }
+        })
+
+        const region = await prisma.region.findFirst({
+            where: {
+                name: data.region
+            }
+        })
+
+
+        const tick = await prisma.websiteTick.create({
+            data: {
+                status: r.status as WebsiteStatus,
+                response_time_ms: r.latency!,
+                created_at: new Date(r.timestamp),
+                region_id: region!.id,
+                website_id: website!.id
+            }
+        });
+
+        console.log("tick ", tick);
+    }
+
+
+    res.json({ ok: true });
+});
 
 
 app.listen(process.env.PORT || 3001)
