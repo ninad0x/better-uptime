@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import express from "express"
+import express, { response } from "express"
 import { prisma } from "store/client"
 import { AuthInput, WebsiteTick } from "./types";
 import { authMiddleware } from "./authMiddleware";
@@ -112,32 +112,31 @@ app.post("/website", authMiddleware, async (req, res) => {
 app.get("/status/:websiteId", authMiddleware, async (req, res) => {
 
     try {
-        console.log("userId ", req.userId);
-        const website = await prisma.website.findFirst({
+
+        const websiteTicks = await prisma.websiteTick.findMany({
             where: {
-                user_id: req.userId!,
-                id: req.params.websiteId
+                website_id: req.params.websiteId!
             },
-            include: {
-                ticks: {
-                    orderBy: {
-                        created_at: "desc"
-                    },
-                    take: 1
-                },
+            select: {
+                status: true,
+                response_time_ms: true,
+                region: { select: { name: true }},
+                created_at: true
+            },
+            orderBy: {
+                created_at: "desc"
             }
         })
 
-        if (!website) {
+        if (!websiteTicks) {
             return res.status(409).json({
                 message: "Not found!"
             })
         }
 
+
         res.json({
-            url: website.url,
-            id: website.id,
-            user_id: website.user_id
+            websiteTicks
         })
         
     } catch (error) {
