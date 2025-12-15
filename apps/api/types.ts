@@ -1,19 +1,21 @@
 import { z } from "zod";
-import { WebsiteStatus } from "../../packages/store/generated/prisma/enums";
 
 export const AuthInput = z.object({
     username: z.string(),
     password: z.string()
 })
 
-export const WebsiteTick = z.object({
+const WebsiteTickSchema = z.object({
+    id: z.string(),
+    website: z.string(),
+    status: z.string(),
+    latency: z.number().nullable(),
+    timestamp: z.number()
+})
+
+export type WebsiteTickType = z.infer<typeof WebsiteTickSchema>
+
+export const WebsiteTickBatch = z.object({
     region: z.string(),
-    results: z.array(
-        z.object({
-            url: z.string(),
-            status: z.string(),
-            latency: z.number().nullable(),
-            timestamp: z.number()
-        }
-    ))
+    results: z.array(WebsiteTickSchema)
 })
