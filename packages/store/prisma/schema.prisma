@@ -27,6 +27,7 @@ model Website {
   user_id     String
   timeAdded   DateTime    @default(now())
   ticks       WebsiteTick[]
+  metric      WebsiteMetric[]
   user        Users       @relation(fields: [user_id], references: [id])
 }
 
@@ -54,5 +55,28 @@ enum WebsiteStatus {
   Up
   Down
   Unknown
+}
+
+model WebsiteMetric {
+  id                    String    @id @default(uuid())
+
+  website_id            String
+  window_start          DateTime
+  window_end            DateTime
+
+  final_status          WebsiteStatus
+  uptime_percent        Float
+  avg_response_time_ms  Int?
+  // p95_response_time_ms  Int?
+
+  regions_down_count    Int
+  regions_down_list     String[]
+
+  created_at            DateTime   @default(now())
+
+  website               Website    @relation(fields: [website_id], references: [id])
+
+  @@unique([website_id, window_start])
+  @@index([website_id, window_start])
 }
 
