@@ -1,9 +1,10 @@
 import jwt from "jsonwebtoken";
-import express, { response } from "express"
+import express from "express"
 import { prisma } from "store/client"
-import { AuthInput, WebsiteTick } from "./types";
+import { AuthInput, WebsiteTickBatch } from "./types";
 import { authMiddleware } from "./authMiddleware";
-import type { WebsiteStatus } from "../../packages/store/generated/prisma/enums";
+import { WebsiteStatus } from "../../packages/store/generated/prisma/enums";
+import "./cron/aggregator"
 
 
 const app = express()
@@ -88,6 +89,7 @@ app.get("/websites", async (req, res) => {
     })
 })
 
+
 app.post("/website", authMiddleware, async (req, res) => {
     
     if (!req.body.url) {
@@ -147,60 +149,60 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
 
 })
 
-const mapStatus = (s: string) => {
-    if (s === "UP") return "Up";
-    if (s === "DOWN") return "Down";
-    return "Unknown";
-};
-
+function mapStatus(s: string) {
+    if (s === "UP") return WebsiteStatus.Up;
+    if (s === "DOWN") return WebsiteStatus.Down;
+    return WebsiteStatus.Unknown;
+}
 
 app.post("/uptime", async (req, res) => {
     console.log("/uptime hit");
 
-    const { success, data, error } = WebsiteTick.safeParse(req.body)
+    const { success, data, error } = WebsiteTickBatch.safeParse(req.body)
 
     if (!success) {
+        console.log(error);
         return
     }
 
-    for (const r of data.results) {
-        
-        const website = await prisma.website.findFirst({
-            where: {
-                url: r.url
-            },
-            select: {
-                id: true
-            }
-        })
-
+    try {
         const region = await prisma.region.findFirst({
-            where: {
-                name: data.region
-            }
+            where: { name: data.region },
+            select: { id: true }
         })
 
+        console.log("results:", data.results.length);
 
-        const tick = await prisma.websiteTick.create({
-            data: {
-                status: mapStatus(r.status),
-                response_time_ms: r.latency ?? -1,
-                created_at: new Date(r.timestamp),
-                region: {
-                    connect: { id: region!.id }
-                },
-                website: {
-                    connect: { id: website!.id }
-                }
 
-            }
-        });
+        const ticks = data.results.map((r) => ({
+            status: mapStatus(r.status),
+            response_time_ms: r.latency ?? -1,
+            created_at: new Date(r.timestamp),
+            region_id: region!.id,
+            website_id: r.id,
+        }));
+        
+        console.log("ticks:", ticks.length);
+        console.log("before insert");
+        console.log("status being saved:", ticks[0]!.status);
 
-        console.log("tick ", tick);
+
+        try {
+            const batch = await prisma.websiteTick.createMany({ data: ticks });
+            console.log("inserted:", batch.count);
+        } catch (e) {
+            console.error("DB error:", e);
+        }
+
+
+    } catch (error) {
+        return res.status(403).json({
+            message: "Error creating ticks"
+        })
     }
 
 
-    res.json({ ok: true });
+    res.json({ success: true });
 });
 
 
