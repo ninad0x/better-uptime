@@ -11,9 +11,12 @@ exports.handler = async () => {
 
   if (startRes.Parameter?.Value !== "true") return "PAUSED";
 
-  const response = await fetch("https://803841669d26.ngrok-free.app/websites");
+  const response = await fetch("https://fad5b8b07e65.ngrok-free.app/websites");
   const data = await response.json();
-  const websites = (data as any).websites.map((w:any) => w.url);
+  const websites = (data as any).websites.map((w:any) => ({ 
+    url: w.url,
+    id: w.id
+  }));
 
   await sqs.send(
     new SendMessageCommand({
