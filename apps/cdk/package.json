@@ -9,7 +9,8 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "deploy": "bunx tsc && bunx aws-cdk deploy"
+    "deploy": "bunx tsc && bunx aws-cdk deploy --all --concurrency 3 -y",
+    "destroy": "bunx aws-cdk destroy --all --concurrency 3 -y"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
