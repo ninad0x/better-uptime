@@ -1,8 +1,9 @@
 import { schedule } from "node-cron"
 import { prisma } from "store/client"
+import { WebsiteStatus } from "../../../packages/store/generated/prisma/enums";
 
 function computeMetrics(ticks: {
-    status: "Up" | "Down" | "Unknown";
+    status: WebsiteStatus;
     response_time_ms: number | null;
     region_id: string;
     }[]) {
@@ -29,26 +30,30 @@ function computeMetrics(ticks: {
             avg_response_time_ms: upCount === 0 ? null : Math.round(latencySum / upCount),
             regions_down_count: regionsDown.size,
             regions_down_list: Array.from(regionsDown),
+            final_status: upCount > 2 ? WebsiteStatus.Up : WebsiteStatus.Down
         };
 }
 
 
-const aggregateTick = schedule("*/3 * * * * *", async () => {
+export const aggregateTick = schedule("*/3 * * * *", async () => {
     console.log("CRON started");
     
-    const WINDOW_MS = 5 * 60 * 1000;  // time window 5 mins
+    const WINDOW_MS = 3 * 60 * 1000;  // time window 2 mins
     const now = Date.now();
+
     const windowEnd = new Date(Math.floor(now / WINDOW_MS) * WINDOW_MS);
     const windowStart = new Date(windowEnd.getTime() - WINDOW_MS);
 
+    console.log("WINDOW START: ", windowStart);
+    console.log("WINDOW END: ", windowEnd);
 
     const ticks = await prisma.websiteTick.findMany({
         where: {
             created_at: {
-                gte: new Date("2025-12-15T16:00:26.136Z"),
-                lte: new Date("2025-12-15T16:03:56.766Z"),
-                // gte: windowStart,
-                // lte: windowEnd,
+                // gte: new Date("2025-12-15T16:00:26.136Z"),
+                // lte: new Date("2025-12-15T16:03:56.766Z"),
+                gte: windowStart,
+                lte: windowEnd,
             },
         },
     });
@@ -63,15 +68,28 @@ const aggregateTick = schedule("*/3 * * * * *", async () => {
         groupTicks.get(tick.website_id)!.push(tick)
     }
 
-    
+    const metricsData = []
 
-    const websiteMetricPayload = groupTicks.forEach((k) => {
-        const data = computeMetrics(k)
-        console.log(data);
+    for (const [websiteId, websiteTicks] of groupTicks) {
+        const metrics = computeMetrics(websiteTicks)
+
+        metricsData.push({
+            website_id: websiteId,
+            window_start: windowStart,
+            window_end: windowEnd,
+            final_status: metrics.final_status,
+            uptime_percent: metrics.uptime_percent,
+            avg_response_time_ms: metrics.avg_response_time_ms,
+            regions_down_count: metrics.regions_down_count,
+            regions_down_list: metrics.regions_down_list
+        })
+    }
+
+    const websiteMetric = await prisma.websiteMetric.createManyAndReturn({
+        data: metricsData,
+        skipDuplicates: true
     })
 
-    // const websiteMetric = await prisma.websiteMetric.create({
-    //     data: websiteMetricPayload
-    // })
+    console.log(websiteMetric);
 
 })
