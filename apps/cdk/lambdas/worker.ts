@@ -14,7 +14,7 @@ exports.handler = async (event: any) => {
       results.push({
         id: website.id,
         website: website.url,
-        status: "UP",
+        status: "Up",
         latency: Date.now() - start,
         timestamp: Date.now(),
 
@@ -24,7 +24,7 @@ exports.handler = async (event: any) => {
       results.push({
         id: website.id,
         website: website.url,
-        status: "DOWN",
+        status: "Down",
         latency: null,
         timestamp: Date.now(),
 
@@ -33,7 +33,7 @@ exports.handler = async (event: any) => {
 
   }
 
-  await fetch("https://fad5b8b07e65.ngrok-free.app/uptime", {
+  await fetch("https://ba3e7196a555.ngrok-free.app/uptime", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
