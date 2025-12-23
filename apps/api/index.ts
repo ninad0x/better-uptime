@@ -150,8 +150,8 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
 })
 
 function mapStatus(s: string) {
-    if (s === "UP") return WebsiteStatus.Up;
-    if (s === "DOWN") return WebsiteStatus.Down;
+    if (s === "Up") return WebsiteStatus.Up;
+    if (s === "Down") return WebsiteStatus.Down;
     return WebsiteStatus.Unknown;
 }
 
