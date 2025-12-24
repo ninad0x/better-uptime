@@ -36,16 +36,16 @@ function computeMetrics(ticks: {
 
 
 export const aggregateTick = schedule("*/3 * * * *", async () => {
-    console.log("CRON started");
-    
+
+    console.log("\nCRON + delay started", new Date().toLocaleTimeString());
+    await new Promise(r => setTimeout(r, 30_000))  // delay 30 sec to match all regions
+    console.log("delay end",new Date().toLocaleTimeString());
+
     const WINDOW_MS = 3 * 60 * 1000;  // time window 2 mins
     const now = Date.now();
 
     const windowEnd = new Date(Math.floor(now / WINDOW_MS) * WINDOW_MS);
     const windowStart = new Date(windowEnd.getTime() - WINDOW_MS);
-
-    console.log("WINDOW START: ", windowStart);
-    console.log("WINDOW END: ", windowEnd);
 
     const ticks = await prisma.websiteTick.findMany({
         where: {
@@ -53,7 +53,7 @@ export const aggregateTick = schedule("*/3 * * * *", async () => {
                 // gte: new Date("2025-12-15T16:00:26.136Z"),
                 // lte: new Date("2025-12-15T16:03:56.766Z"),
                 gte: windowStart,
-                lte: windowEnd,
+                lt: windowEnd,
             },
         },
     });
@@ -90,6 +90,6 @@ export const aggregateTick = schedule("*/3 * * * *", async () => {
         skipDuplicates: true
     })
 
-    console.log(websiteMetric);
+    console.log("created at", websiteMetric[0]?.created_at.toLocaleTimeString());
 
 })
