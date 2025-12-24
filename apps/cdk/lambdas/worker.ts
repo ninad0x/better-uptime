@@ -33,7 +33,8 @@ exports.handler = async (event: any) => {
 
   }
 
-  await fetch("https://ba3e7196a555.ngrok-free.app/uptime", {
+  // temp url
+  await fetch("https://6c7eb5f05757.ngrok-free.app/uptime", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
