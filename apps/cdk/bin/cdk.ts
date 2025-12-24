@@ -4,8 +4,8 @@ import { UptimeStack } from '../lib/cdk-stack';
 const app = new cdk.App();
 const regions = [
   "ap-south-1",
-  "us-east-1",
   "eu-west-1",
+  "us-east-1",
 ];
 
 regions.forEach((region) => {
