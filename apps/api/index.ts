@@ -156,7 +156,6 @@ function mapStatus(s: string) {
 }
 
 app.post("/uptime", async (req, res) => {
-    console.log("/uptime hit");
 
     const { success, data, error } = WebsiteTickBatch.safeParse(req.body)
 
@@ -168,11 +167,10 @@ app.post("/uptime", async (req, res) => {
     try {
         const region = await prisma.region.findFirst({
             where: { name: data.region },
-            select: { id: true }
+            select: { id: true, name: true }
         })
 
-        console.log("results:", data.results.length);
-
+        // console.log("/uptime hit by region", region?.name);
 
         const ticks = data.results.map((r) => ({
             status: mapStatus(r.status),
@@ -181,15 +179,12 @@ app.post("/uptime", async (req, res) => {
             region_id: region!.id,
             website_id: r.id,
         }));
-        
-        console.log("ticks:", ticks.length);
-        console.log("before insert");
-        console.log("status being saved:", ticks[0]!.status);
-
 
         try {
+
             const batch = await prisma.websiteTick.createMany({ data: ticks });
-            console.log("inserted:", batch.count);
+            console.log(`inserted: ${batch.count} from ${region?.name} at ${new Date().toLocaleTimeString()}`);
+            
         } catch (e) {
             console.error("DB error:", e);
         }
@@ -200,7 +195,6 @@ app.post("/uptime", async (req, res) => {
             message: "Error creating ticks"
         })
     }
-
 
     res.json({ success: true });
 });
