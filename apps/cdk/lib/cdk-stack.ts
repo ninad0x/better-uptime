@@ -5,14 +5,14 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as lambdaSqs from "aws-cdk-lib/aws-lambda-event-sources";
-import * as ssm from "aws-cdk-lib/aws-ssm";
+
+console.time("yo")
 
 export class UptimeStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     const queue = new sqs.Queue(this, "RegionQueue");
-
 
     const worker = new lambda.Function(this, "WorkerFn", {
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -32,20 +32,13 @@ export class UptimeStack extends cdk.Stack {
       environment: { QUEUE_URL: queue.queueUrl },
     });
 
-    const startParam = ssm.StringParameter.fromStringParameterName(
-      this,
-      "StartParam",
-      "/uptime/start"
-    );
-
-    startParam.grantRead(scheduler);
-
     queue.grantSendMessages(scheduler);
 
     new events.Rule(this, "Every3Min", {
-      schedule: events.Schedule.rate(cdk.Duration.minutes(2)),
+      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
       targets: [new targets.LambdaFunction(scheduler)],
     });
   }
 }
 
+console.timeEnd("yo")
