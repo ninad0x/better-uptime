@@ -4,11 +4,13 @@ import { prisma } from "store/client"
 import { AuthInput, WebsiteTickBatch } from "./types";
 import { authMiddleware } from "./authMiddleware";
 import { WebsiteStatus } from "../../packages/store/generated/prisma/enums";
-import "./cron/aggregator"
+// import "./cron/aggregator"
+import cors from "cors"
 
 
 const app = express()
 app.use(express.json())
+app.use(cors())
 
 app.get("/", (req, res) => {
     return res.json({message: "hellows"})
@@ -200,4 +202,47 @@ app.post("/uptime", async (req, res) => {
 });
 
 
-app.listen(process.env.PORT || 3001)
+app.get("/all", async (req, res) => {
+
+    const ticks =  await prisma.websiteTick.findMany({
+        orderBy: {
+            created_at: "asc"
+        },
+        select: {
+            id: true,
+            website: { select: {url: true}},
+            created_at: true,
+            status: true
+        },
+    })
+
+    const ticksData = ticks.map((e) => ({
+        id: e.id,
+        url: e.website.url,
+        status: e.status,
+        createdAt: e.created_at.toLocaleTimeString()
+    }))
+
+    return res.json({
+        ticksData
+    })
+})
+
+
+app.get("/all-metrics", async (req, res) => {
+
+    const ticks =  await prisma.websiteMetric.findMany({
+    })
+
+    const ticksData = ticks.map((e) => ({
+        id: e.website_id,
+        start: e.window_start.toLocaleTimeString(),
+        end: e.window_end.toLocaleTimeString()
+    }))
+
+    return res.json({
+        ticksData
+    })
+})
+
+app.listen(process.env.PORT || 3001, () => console.log("\nSERVER started", new Date().toLocaleTimeString()))
