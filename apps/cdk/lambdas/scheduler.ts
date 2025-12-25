@@ -4,7 +4,7 @@ const sqs = new SQSClient({});
 
 exports.handler = async () => {
 
-  const response = await fetch("https://6c7eb5f05757.ngrok-free.app/websites");   // temp url
+  const response = await fetch("https://421031223f34.ngrok-free.app/websites");   // temp url
   const data = await response.json();
   const websites = (data as any).websites.map((w:any) => ({ 
     url: w.url,
