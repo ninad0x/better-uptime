@@ -35,7 +35,7 @@ export class UptimeStack extends cdk.Stack {
     queue.grantSendMessages(scheduler);
 
     new events.Rule(this, "Every3Min", {
-      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+      schedule: events.Schedule.rate(cdk.Duration.minutes(2)),
       targets: [new targets.LambdaFunction(scheduler)],
     });
   }
