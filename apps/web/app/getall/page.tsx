@@ -6,9 +6,11 @@ export default async function GetAll() {
 
     return (
     <div>
-        {data.ticksData?.map((e: any) => {
-            return <p key={e.id} className="p-2 text-sm">{JSON.stringify(e)}</p>
-        })}
+        {data.ticksData?.map((e: any) => (
+            <div key={e.id} className="p-2">
+                <h3>{e.url}{" - "}{e.status}{" - "}{e.createdAt}</h3>
+            </div>
+        ))}
     </div>
     )
 }
