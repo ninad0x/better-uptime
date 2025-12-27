@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client"
@@ -40,15 +35,17 @@ model Region {
 }
 
 model WebsiteTick {
-  id                    String    @id    @default(uuid())
+  id                    String    @default(uuid())
+  created_at            DateTime    @default(now()) @db.Timestamptz()
   response_time_ms      Int
   status                WebsiteStatus
   region_id             String
   website_id            String  
-  created_at            DateTime    @default(now()) 
 
   region                Region  @relation(fields: [region_id], references: [id])
   website               Website @relation(fields: [website_id], references: [id])
+
+  @@id([id, created_at])
 }
 
 enum WebsiteStatus {
@@ -58,16 +55,15 @@ enum WebsiteStatus {
 }
 
 model WebsiteMetric {
-  id                    String    @id @default(uuid())
+  id                    String    @default(uuid())
 
   website_id            String
-  window_start          DateTime
+  window_start          DateTime  @db.Timestamptz()
   window_end            DateTime
 
   final_status          WebsiteStatus
   uptime_percent        Float
   avg_response_time_ms  Int?
-  // p95_response_time_ms  Int?
 
   regions_down_count    Int
   regions_down_list     String[]
@@ -76,7 +72,7 @@ model WebsiteMetric {
 
   website               Website    @relation(fields: [website_id], references: [id])
 
-  @@unique([website_id, window_start])
+  @@id([id, window_start])
   @@index([website_id, window_start])
 }
 
