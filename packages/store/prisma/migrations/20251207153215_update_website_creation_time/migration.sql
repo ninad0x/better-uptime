@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "public"."Website" ALTER COLUMN "timeAdded" SET DEFAULT CURRENT_TIMESTAMP;
