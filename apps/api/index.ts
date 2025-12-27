@@ -113,6 +113,26 @@ app.post("/website", authMiddleware, async (req, res) => {
 })
 
 
+app.post("/region", authMiddleware, async (req, res) => {
+    
+    if (!req.body.region) {
+        res.status(411).json({});
+        return
+    }
+    
+    const region = await prisma.region.create({
+        data: {
+            name: req.body.region
+        }
+    })
+
+    return res.json({
+        id: region.id,
+        name: region.name
+    })
+})
+
+
 app.get("/status/:websiteId", authMiddleware, async (req, res) => {
 
     try {
