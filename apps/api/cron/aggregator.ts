@@ -51,8 +51,6 @@ export const aggregateTick = schedule("*/6 * * * *", async () => {
     const ticks = await prisma.websiteTick.findMany({
         where: {
             created_at: {
-                // gte: new Date("2025-12-15T16:00:26.136Z"),
-                // lt: new Date("2025-12-15T16:03:56.766Z"),
                 gte: windowStart,
                 lt: windowEnd,
             },
@@ -92,6 +90,6 @@ export const aggregateTick = schedule("*/6 * * * *", async () => {
     })
 
     console.log("created at", websiteMetric[0]?.created_at.toLocaleTimeString());
-    console.log("\n\n");
+    console.log("\n");
 
 })
