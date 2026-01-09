@@ -9,43 +9,97 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Users {
-  id          String    @id   @default(uuid())
-  username    String    @unique
-  password    String
-  websites    Website[]
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  emailVerified  Boolean   @default(false)
+  image          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  sessions       Session[]
+  accounts       Account[]
+  websites       Website[]
+  
 }
 
+model Session {
+  id         String    @id @default(cuid())
+  userId     String
+  token      String    @unique
+  expiresAt  DateTime
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                   String    @id @default(cuid())
+  userId               String
+  accountId            String
+  providerId           String
+  accessToken          String?
+  refreshToken         String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                String?
+  idToken              String?
+  password             String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, providerId])
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([identifier, value])
+}
+
+
 model Website {
-  id          String    @id    @default(uuid())
+  id          String    @id    @default(cuid())
   url         String
-  user_id     String
+  userId     String
   timeAdded   DateTime    @default(now())
   ticks       WebsiteTick[]
   metric      WebsiteMetric[]
-  user        Users       @relation(fields: [user_id], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
 }
 
 
 model Region {
-  id          String    @id     @default(uuid())
+  id          String    @id     @default(cuid())
   name        String
   ticks       WebsiteTick[]
 
 }
 
 model WebsiteTick {
-  id                    String    @default(uuid())
-  created_at            DateTime    @default(now()) @db.Timestamptz()
-  response_time_ms      Int
+  id                    String    @default(cuid())
+  createdAt             DateTime    @default(now()) @db.Timestamptz()
+  responseTimeMs      Int
   status                WebsiteStatus
-  region_id             String
-  website_id            String  
+  regionId             String
+  websiteId             String  
 
-  region                Region  @relation(fields: [region_id], references: [id])
-  website               Website @relation(fields: [website_id], references: [id])
+  region                Region  @relation(fields: [regionId], references: [id])
+  website               Website @relation(fields: [websiteId], references: [id])
 
-  @@id([id, created_at])
+  @@id([id, createdAt])
 }
 
 enum WebsiteStatus {
@@ -55,24 +109,24 @@ enum WebsiteStatus {
 }
 
 model WebsiteMetric {
-  id                    String    @default(uuid())
+  id                    String    @default(cuid())
 
-  website_id            String
-  window_start          DateTime  @db.Timestamptz()
-  window_end            DateTime
+  websiteId            String
+  windowStart          DateTime  @db.Timestamptz()
+  windowEnd            DateTime
 
-  final_status          WebsiteStatus
-  uptime_percent        Float
-  avg_response_time_ms  Int?
+  finalStatus          WebsiteStatus
+  uptimePercent        Float
+  avgResponseTimeMs    Int?
 
-  regions_down_count    Int
-  regions_down_list     String[]
+  regionsDownCount    Int
+  regionsDownList     String[]
 
-  created_at            DateTime   @default(now())
+  createdAt            DateTime   @default(now())
 
-  website               Website    @relation(fields: [website_id], references: [id])
+  website               Website    @relation(fields: [websiteId], references: [id])
 
-  @@id([id, window_start])
-  @@index([website_id, window_start])
+  @@id([id, windowStart])
+  @@index([websiteId, windowStart])
 }
 
