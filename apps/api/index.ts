@@ -2,84 +2,107 @@ import jwt from "jsonwebtoken";
 import express from "express"
 import { prisma } from "store/client"
 import { AuthInput, WebsiteTickBatch } from "./types";
-import { authMiddleware } from "./authMiddleware";
+import { authMiddleware } from "./lib/authMiddleware";
 import { WebsiteStatus } from "../../packages/store/generated/prisma/enums";
 // import "./cron/aggregator"
 import cors from "cors"
+import { toNodeHandler } from "better-auth/node"
+import { auth } from "./lib/auth"
+import { getServerSession } from "./lib/getSession";
+import "./cron/new-cron"
 
 
 const app = express()
-app.use(express.json())
-app.use(cors())
+app.use(cors({
+    origin: "http://localhost:3000",
+    credentials: true
+}))
+
 
 app.get("/", (req, res) => {
     return res.json({message: "hellows"})
 })
 
+app.all("/api/auth/*splat", toNodeHandler(auth))
 
-app.post("/user/signup", async (req, res) => {
-    try {
 
-        const data = AuthInput.safeParse(req.body)
+app.get("/api/profile", async (req, res) => {
+    const session = await getServerSession(req)
 
-        if (!data.success) {
-            return res.status(403).send("")
-        }
-
-        const user = await prisma.users.create({
-            data: {
-                username: data.data.username,
-                password: data.data.password
-            }
-        })
-
-        return res.json({
-            id: user.id
-        })
-
-    } catch (error) {
-        return res.status(403).send("")
+    if (!session) {
+        return res.status(401).send("Unauthorized")
     }
+
+    res.json(session)
 })
 
 
-app.post("/user/signin", async (req, res) => {
-    try {
-        const data = AuthInput.safeParse(req.body)
-
-        if (!data.success) {
-            return res.status(403).send("not")
-        }
-
-        let user = await prisma.users.findFirst({
-            where: {
-                username: data.data.username,
-            }
-        })
-
-        if (!user) {
-            return res.json({
-                message: "User does not exist"
-            })
-        }
-
-        if (user.password !== data.data.password) {
-            return res.json({
-                message: "Incorrect password"
-            })
-        }
-
-        const token = jwt.sign(user.id, process.env.JWT_SECRET!)
-
-        res.json({
-            jwt: token
-        })
+app.use(express.json())
 
 
-    } catch (error) {
-        return res.status(403).send("err")
-    }
-})
+// app.post("/user/signup", async (req, res) => {
+//     try {
+
+//         const data = AuthInput.safeParse(req.body)
+
+//         if (!data.success) {
+//             return res.status(403).send("")
+//         }
+
+//         const user = await prisma.user.create({
+//             data: {
+//                 name: data.data.username,
+//                 password: data.data.password
+//             }
+//         })
+
+//         return res.json({
+//             id: user.id
+//         })
+
+//     } catch (error) {
+//         return res.status(403).send("")
+//     }
+// })
+
+
+// app.post("/user/signin", async (req, res) => {
+//     try {
+//         const data = AuthInput.safeParse(req.body)
+
+//         if (!data.success) {
+//             return res.status(403).send("not")
+//         }
+
+//         let user = await prisma.users.findFirst({
+//             where: {
+//                 username: data.data.username,
+//             }
+//         })
+
+//         if (!user) {
+//             return res.json({
+//                 message: "User does not exist"
+//             })
+//         }
+
+//         if (user.password !== data.data.password) {
+//             return res.json({
+//                 message: "Incorrect password"
+//             })
+//         }
+
+//         const token = jwt.sign(user.id, process.env.JWT_SECRET!)
+
+//         res.json({
+//             jwt: token
+//         })
+
+
+//     } catch (error) {
+//         return res.status(403).send("err")
+//     }
+// })
 
 
 app.get("/websites", async (req, res) => {
@@ -92,7 +115,7 @@ app.get("/websites", async (req, res) => {
 })
 
 
-app.post("/website", authMiddleware, async (req, res) => {
+app.post("/website", async (req, res) => {
     
     if (!req.body.url) {
         res.status(411).json({});
@@ -101,9 +124,10 @@ app.post("/website", authMiddleware, async (req, res) => {
     
     const website = await prisma.website.create({
         data: {
+            name: req.body.name,
             url: req.body.url,
-            timeAdded: new Date(),
-            user_id: req.userId!
+            // userId: req.userId!
+            userId: "1K19HYSNIu8YaCXMoEw20AwkQf7jvgMj"
         }
     })
 
@@ -113,7 +137,7 @@ app.post("/website", authMiddleware, async (req, res) => {
 })
 
 
-app.post("/region", authMiddleware, async (req, res) => {
+app.post("/region", async (req, res) => {
     
     if (!req.body.region) {
         res.status(411).json({});
@@ -139,16 +163,16 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
 
         const websiteTicks = await prisma.websiteTick.findMany({
             where: {
-                website_id: req.params.websiteId!
+                websiteId : req.params.websiteId!
             },
             select: {
                 status: true,
-                response_time_ms: true,
+                responseTimeMs: true,
                 region: { select: { name: true }},
-                created_at: true
+                createdAt: true
             },
             orderBy: {
-                created_at: "desc"
+                createdAt: "desc"
             }
         })
 
@@ -196,10 +220,10 @@ app.post("/uptime", async (req, res) => {
 
         const ticks = data.results.map((r) => ({
             status: mapStatus(r.status),
-            response_time_ms: r.latency ?? -1,
-            created_at: new Date(r.timestamp),
-            region_id: region!.id,
-            website_id: r.id,
+            responseTimeMs: r.latency ?? -1,
+            createdAt: new Date(r.timestamp),
+            regionId: region!.id,
+            websiteId: r.id,
         }));
 
         try {
@@ -226,12 +250,12 @@ app.get("/all", async (req, res) => {
 
     const ticks =  await prisma.websiteTick.findMany({
         orderBy: {
-            created_at: "asc"
+            createdAt: "asc"
         },
         select: {
             id: true,
             website: { select: {url: true}},
-            created_at: true,
+            createdAt: true,
             status: true
         },
     })
@@ -240,7 +264,7 @@ app.get("/all", async (req, res) => {
         id: e.id,
         url: e.website.url,
         status: e.status,
-        createdAt: e.created_at.toLocaleTimeString()
+        createdAt: e.createdAt.toLocaleTimeString()
     }))
 
     return res.json({
@@ -255,9 +279,9 @@ app.get("/all-metrics", async (req, res) => {
     })
 
     const ticksData = ticks.map((e) => ({
-        id: e.website_id,
-        start: e.window_start.toLocaleTimeString(),
-        end: e.window_end.toLocaleTimeString()
+        id: e.websiteId,
+        start: e.windowStart.toLocaleTimeString(),
+        end: e.windowEnd.toLocaleTimeString()
     }))
 
     return res.json({
