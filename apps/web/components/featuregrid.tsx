@@ -8,6 +8,8 @@ export const FeatureGrid = () => {
         <Card className='bg-green-300 col-span-2'>Card 3</Card>
         <Card className='bg-red-300 col-span-2'>Card 4</Card>
         <Card className='bg-purple-300'>Card 6</Card>
+        <Card className='bg-teal-300'>Card 1</Card>
+        <Card className='bg-orange-300 col-span-2'>Card 3</Card>
     </div>
   )
 }
