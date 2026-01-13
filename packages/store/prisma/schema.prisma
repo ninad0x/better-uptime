@@ -71,15 +71,38 @@ model Verification {
 
 
 model Website {
-  id          String    @id    @default(cuid())
+  id          String      @id    @default(cuid())
   url         String
-  userId     String
+  name        String
+  userId      String
   timeAdded   DateTime    @default(now())
+
+  isActive    Boolean     @default(true)
+  currentStatus   WebsiteStatus     @default(Unknown)
+  lastChecked     DateTime?
+
   ticks       WebsiteTick[]
   metric      WebsiteMetric[]
+  incidents   Incident[]
   user        User       @relation(fields: [userId], references: [id])
 }
 
+model Incident {
+  id          String    @id @default(cuid())
+  websiteId   String
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  status      String
+  type        IncidentType    @default(Global)
+  cause       String? 
+  
+  website     Website   @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+}
+
+enum IncidentType {
+  Global  
+  Regional
+}
 
 model Region {
   id          String    @id     @default(cuid())
@@ -91,11 +114,11 @@ model Region {
 model WebsiteTick {
   id                    String    @default(cuid())
   createdAt             DateTime    @default(now()) @db.Timestamptz()
-  responseTimeMs      Int
+  responseTimeMs        Int
   status                WebsiteStatus
-  regionId             String
+  regionId              String
   websiteId             String  
-
+  details               String?
   region                Region  @relation(fields: [regionId], references: [id])
   website               Website @relation(fields: [websiteId], references: [id])
 
