@@ -2,7 +2,7 @@ import { prisma } from "store/client";
 
 export async function getDashboardData() {
   const timeWindow = new Date();
-  timeWindow.setHours(timeWindow.getHours() - 12); 
+  timeWindow.setHours(timeWindow.getHours() - 100); 
 
   const sites = await prisma.website.findMany({
     orderBy: { id: 'asc' }, 
@@ -26,9 +26,9 @@ export async function getDashboardData() {
     const uptimePercent = totalCount > 0 ? (upCount / totalCount) * 100 : 0;
     console.log(site.name, uptimePercent);
 
-    const avgList = site.metric.map((s) => s.avgResponseTimeMs)
+    const avgList = site.metric.map((s) => s.avgResponseTimeMs ?? 0)
     
-    const newAvgResTime = avgList.reduce((a, b) => a! + b!)! / avgList.length
+    const newAvgResTime = avgList.reduce((a, b) => a + b, 0) / avgList.length
 
     return {
       id: site.id,
