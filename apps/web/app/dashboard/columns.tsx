@@ -3,39 +3,15 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge"; 
 
-// 1. Define the Data Shape
 export type WebsiteRow = {
   id: string;
   url: string;
   currentStatus: string;
   uptime: string;
-  // sparkline: number[];
   avgResponseTime: string
 };
 
-// 2. The Sparkline Graph Component
-// const Sparkline = ({ data }: { data: number[] }) => {
-//   if (!data || data.length < 2) return <span className="text-xs text-muted-foreground">No Data</span>;
 
-//   const height = 30;
-//   const width = 100;
-//   const max = Math.max(...data, 1);
-//   const min = Math.min(...data);
-
-//   const points = data.map((val, i) => {
-//     const x = (i / (data.length - 1)) * width;
-//     const y = height - ((val - min) / (max - min || 1)) * height;
-//     return `${x},${y}`;
-//   }).join(" ");
-
-//   return (
-//     <svg width={width} height={height} className="overflow-visible">
-//       <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" className="text-primary" />
-//     </svg>
-//   );
-// };
-
-// 3. The Columns Definition
 export const columns: ColumnDef<WebsiteRow>[] = [
   {
     accessorKey: "currentStatus",
