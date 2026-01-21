@@ -1,15 +1,15 @@
 import jwt from "jsonwebtoken";
 import express from "express"
 import { prisma } from "store/client"
-import { AuthInput, WebsiteTickBatch } from "./types";
+import { WebsiteTickBatch } from "./types";
 import { authMiddleware } from "./lib/authMiddleware";
 import { WebsiteStatus } from "../../packages/store/generated/prisma/enums";
-// import "./cron/aggregator"
 import cors from "cors"
 import { toNodeHandler } from "better-auth/node"
 import { auth } from "./lib/auth"
 import { getServerSession } from "./lib/getSession";
 import "./cron/new-cron"
+import { checkIncidentForWebsite } from "./lib/checkIncident";
 
 
 const app = express()
@@ -107,7 +107,11 @@ app.use(express.json())
 
 app.get("/websites", async (req, res) => {
 
-    const websites = await prisma.website.findMany();
+    const websites = await prisma.website.findMany({
+        where: {
+            isActive: true
+        }
+    });
 
     return res.json({
         websites
@@ -116,7 +120,7 @@ app.get("/websites", async (req, res) => {
 
 
 app.post("/website", async (req, res) => {
-    
+    // TODO: add middleware again
     if (!req.body.url) {
         res.status(411).json({});
         return
@@ -127,7 +131,7 @@ app.post("/website", async (req, res) => {
             name: req.body.name,
             url: req.body.url,
             // userId: req.userId!
-            userId: "1K19HYSNIu8YaCXMoEw20AwkQf7jvgMj"
+            userId: "Qf9GvFkeK2NYgWb6O7gV3MS4ngSz4V9b"
         }
     })
 
@@ -224,21 +228,30 @@ app.post("/uptime", async (req, res) => {
             createdAt: new Date(r.timestamp),
             regionId: region!.id,
             websiteId: r.id,
+            details: r.details
         }));
 
         try {
 
             const batch = await prisma.websiteTick.createMany({ data: ticks });
             console.log(`inserted: ${batch.count} from ${region?.name} at ${new Date().toLocaleTimeString()}`);
+
+            // Incident calculation
+            const websiteIds = [...new Set(ticks.map(t => t.websiteId))]
+
+            for (const websiteId of websiteIds) {
+                checkIncidentForWebsite(websiteId)
+            }
             
         } catch (e) {
             console.error("DB error:", e);
         }
 
 
-    } catch (error) {
+    } catch (error: any) {
         return res.status(403).json({
-            message: "Error creating ticks"
+            message: "Error creating ticks",
+            error: error.message
         })
     }
 
