@@ -62,7 +62,7 @@ export const aggregateMetrics = schedule("*/5 * * * *", async () => {
       uptimePercent: uptime,
       avgResponseTimeMs: avgLat,
       regionsDownCount: m.downRegions.size,
-      regions_down_list: Array.from(m.downRegions),
+      regionsDownList: [...m.downRegions] as string[],
     };
   });
 
