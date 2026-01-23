@@ -1,12 +1,21 @@
 import { getDashboardData } from "@/lib/getDashboardData";
-import { DataTable } from "./data-table";
-import { columns } from "./columns";
+import { auth } from "@repo/auth/auth"
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
 
-  const data = await getDashboardData();
+  const session = await auth.api.getSession({
+    headers: await headers()
+  })
+
+  if (!session) {
+    redirect("/sign-in")
+  }
+
+  const data = await getDashboardData(session.user.id)
 
   return (
     <div className="max-w-5xl mx-auto p-4">
@@ -19,7 +28,18 @@ export default async function Dashboard() {
       </div>
     </nav>
 
-    <DataTable columns={columns} data={data}/>
+    <div className="flex p-3 gap-8">{data.map((e) => (
+      <div key={e.id} className="gap-2">
+        <p>{e.name}</p>
+        <p>{e.url}</p>
+        {e.ticks.map((t) => (
+          <p key={t.createdAt.toString()}>{t.status} --- {t.createdAt.toLocaleTimeString()}</p>
+        ))}
+        {/* <p>Last Checked {new Date(e.ticks).toLocaleTimeString()}</p> */}
+      </div>
+    ))}</div>
+
+    {/* <DataTable columns={columns} data={data}/> */}
     </div>
 
   )
