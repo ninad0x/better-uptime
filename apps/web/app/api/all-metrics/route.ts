@@ -1,6 +1,7 @@
 import { prisma } from "@repo/db/client"
 
 export async function GET() {
+  
   const ticks = await prisma.websiteMetric.findMany()
 
   const ticksData = ticks.map(e => ({

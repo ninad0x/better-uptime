@@ -2,8 +2,8 @@ import { prisma } from "@repo/db/client"
 
 export async function GET(
     _req: Request,
-    { params }: { params: { websiteId: string } }
-) {
+    { params }: { params: { websiteId: string } }) {
+    
     const websiteTicks = await prisma.websiteTick.findMany({
         where: { websiteId: params.websiteId },
         select: {

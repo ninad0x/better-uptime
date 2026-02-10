@@ -1,0 +1,54 @@
+
+import { checkIncidentForWebsite } from "@/lib/checkIncident";
+import { WebsiteTickBatch } from "@/lib/types";
+import { prisma } from "@repo/db/client";
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  const body = await req.json();
+  const parsed = WebsiteTickBatch.safeParse(body);
+
+  if (!parsed.success) {
+    console.log(parsed.error);
+    return NextResponse.json({ success: false }, { status: 400 });
+  }
+
+  const data = parsed.data;
+
+  try {
+    const region = await prisma.region.findFirst({
+      where: { name: data.region },
+      select: { id: true, name: true }
+    });
+
+    if (!region) {
+      return NextResponse.json({ error: "Region not found" }, { status: 404 });
+    }
+
+    const ticks = data.results.map(r => ({
+      status: r.status,
+      responseTimeMs: r.latency ?? -1,
+      createdAt: new Date(r.timestamp),
+      regionId: region.id,
+      websiteId: r.id,
+      details: r.details
+    }));
+
+    const batch = await prisma.websiteTick.createMany({ data: ticks });
+    console.log(`inserted: ${batch.count} from ${region.name}`);
+
+    const websiteIds = [...new Set(ticks.map(t => t.websiteId))];
+
+    for (const websiteId of websiteIds) {
+      checkIncidentForWebsite(websiteId);
+    }
+
+    return NextResponse.json({ success: true });
+    
+  } catch (e: any) {
+    return NextResponse.json(
+      { message: "Error creating ticks", error: e.message },
+      { status: 403 }
+    );
+  }
+}
