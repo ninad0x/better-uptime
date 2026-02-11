@@ -1,22 +1,7 @@
 import React from 'react'
 import { motion } from "motion/react"
-import { useRouter } from 'next/navigation'
-import { authClient } from '@/lib/authClient'
 
 export const HeroText = () => {
-  
-  const router = useRouter()
-
-  async function handleSignOut() {
-    const { error } = await authClient.signOut()
-
-    if (error) {
-      console.log(error || "Something went wrong");
-    } else {
-      console.log("Signout success");
-      router.push("/sign-in")
-    }
-  }
 
   return (
     <div className="hero-text max-w-7xl mx-auto text-center absolute left-[50%] -translate-x-[50%] top-[55%] z-10">
@@ -43,7 +28,6 @@ export const HeroText = () => {
     <div className="flex text-sm  gap-3 lg:gap-5 justify-center">
       <button className="px-3 py-1.5 text-white bg-blue-500 rounded-md cursor-pointer">Hello</button>
       <button className="px-3 py-1.5 text-zinc-800 border border-blue-400 rounded-md cursor-pointer">Hello</button>
-      <button onClick={handleSignOut} className="px-3 py-1.5 text-zinc-800 border bg-red-300 border-red-400 rounded-md cursor-pointer">Sign out</button>
     </div>
     </div>
   )
