@@ -1,25 +1,42 @@
-import { getWebsiteDetails } from "@/lib/monitorData"
+import { getMonitorData } from "@/lib/getMonitorData"
+import { redirect } from "next/navigation"
+import { MonitorHeader } from "./_components/monitorHeader"
+import { StatsCards } from "./_components/statsCards"
+import { UptimeChart } from "./_components/uptimeChart"
+import { ResponseTimeChart } from "./_components/responseTimeChart"
+import { IncidentsList } from "./_components/incidentList"
 
 
-export default async function MonitorPage({params} : 
-    { params: Promise<{ id: string}> }) {
-
+export default async function MonitorPage({params}: { params: Promise<{ id: string}> }) {
     const websiteId = (await params).id
+    const data = await getMonitorData(websiteId)
+    
+    if (!data) {
+        redirect('/dashboard')
+    }
 
-    const data = await getWebsiteDetails(websiteId)
-
-    if (!data) return <p>No data avaliable</p>
-
-    return <div className="p-4 h-screen bg-zinc-100">
-        <h2>{data.name}</h2>
-        <p>{data.url}</p>
-        <p>{data.isActive ? "yes" : "no"}</p>
-        <p>{data.lastChecked?.toLocaleTimeString()}</p>
-
-        {data.ticks.map((e) => {
-            return <div key={e.id}>
-                
-            </div>
-        })}
-    </div>
+    return (
+        <div className="flex flex-col mx-auto p-4 max-w-5xl gap-8">
+            <MonitorHeader 
+                name={data.website.name}
+                url={data.website.url}
+                currentStatus={data.website.currentStatus}
+                lastChecked={data.website.lastChecked}
+            />
+            
+            <StatsCards 
+                uptime24h={data.uptime.h24}
+                uptime7d={data.uptime.d7}
+                uptime30d={data.uptime.d30}
+                avgResponseTime={data.metrics[0]?.avgResponseTimeMs || null}
+                incidentCount={data.incidents.length}
+            />
+            
+            <UptimeChart data={data.metrics} />
+            
+            <ResponseTimeChart data={data.recentTicks} />
+            
+            <IncidentsList incidents={data.incidents} />
+        </div>
+    )
 }
