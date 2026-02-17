@@ -1,132 +1,59 @@
 import { prisma } from "@repo/db/client"
 
-interface IncidentCheckResult {
-  incidentCreated: boolean
-  incidentResolved: boolean
-  message: string
-}
-
-export async function checkIncidentForWebsite(
-  websiteId: string
-): Promise<IncidentCheckResult> {
-  
-  // CONFIG
+export async function checkIncidentForWebsite(websiteId: string): Promise<void> {
   const WINDOW_MS = 3 * 60 * 1000
-  const MIN_REGIONS_REQUIRED = 2
-  const DOWN_THRESHOLD = 2
-  const DOWN_STATUS_CODE = 400
-  
   const cutoff = new Date(Date.now() - WINDOW_MS)
 
   try {
+    // Get recent ticks
     const ticks = await prisma.websiteTick.findMany({
-      where: { 
-        websiteId,
-        createdAt: { gte: cutoff }
-      },
+      where: { websiteId, createdAt: { gte: cutoff } },
       orderBy: { createdAt: "desc" },
-      include: {
-        region: { select: { name: true } }
-      }
+      include: { region: { select: { name: true } } }
     })
 
-    
-    const latestByRegion = new Map<string, typeof ticks[0]>()
+    // Latest tick per region
+    const byRegion = new Map()
     for (const tick of ticks) {
-      if (!latestByRegion.has(tick.regionId)) {
-        latestByRegion.set(tick.regionId, tick)
-      }
+      if (!byRegion.has(tick.regionId)) byRegion.set(tick.regionId, tick)
     }
 
-    
-    if (latestByRegion.size < MIN_REGIONS_REQUIRED) {
-      return {
-        incidentCreated: false,
-        incidentResolved: false,
-        message: `Insufficient data: only ${latestByRegion.size}/${MIN_REGIONS_REQUIRED} regions reporting`
-      }
-    }
+    // Need at least 2 regions
+    if (byRegion.size < 2) return
 
-    const regionStatus = Array.from(latestByRegion.entries()).map(([regionId, tick]) => ({
-      regionId,
-      regionName: tick.region.name,
-      status: tick.status,
-      isDown: tick.status >= DOWN_STATUS_CODE,
-      latency: tick.responseTimeMs,
-      timestamp: tick.createdAt
-    }))
+    // Count down regions (status >= 400)
+    const regions = Array.from(byRegion.values())
+    const downRegions = regions.filter(t => t.status >= 400)
+    const isDown = downRegions.length >= 2
 
-    const downRegions = regionStatus.filter(r => r.isDown)
-    const totalRegions = regionStatus.length
-
-    const activeIncident = await prisma.incident.findFirst({
-      where: { 
-        websiteId, 
-        endedAt: null 
-      },
-      orderBy: { startedAt: 'desc' }
+    // Check for active incident
+    const incident = await prisma.incident.findFirst({
+      where: { websiteId, endedAt: null }
     })
 
-    const isCurrentlyDown = downRegions.length >= DOWN_THRESHOLD
-
-    if (isCurrentlyDown && !activeIncident) {
-      const incidentType = downRegions.length === totalRegions ? "Global" : "Regional"
-      const downRegionNames = downRegions.map(r => r.regionName).join(", ")
-      
+    // Create incident if 2+ regions down
+    if (isDown && !incident) {
       await prisma.incident.create({
         data: {
           websiteId,
-          type: incidentType,
+          type: downRegions.length === regions.length ? "Global" : "Regional",
           status: "Ongoing",
-          startedAt: new Date(),
-          cause: `${downRegions.length}/${totalRegions} regions down: [${downRegionNames}]`
+          cause: downRegions.map(t => t.region.name).join(", ")
         }
       })
-
-      console.log(`🚨 INCIDENT CREATED - Website ${websiteId}: ${incidentType} outage (${downRegions.length}/${totalRegions} regions down)`)
-      
-      return {
-        incidentCreated: true,
-        incidentResolved: false,
-        message: `Incident created: ${incidentType} outage`
-      }
+      console.log(`🚨 INCIDENT: ${websiteId} (${downRegions.length}/${regions.length} down)`)
     }
 
-    if (!isCurrentlyDown && activeIncident) {
+    // Resolve incident if back up
+    if (!isDown && incident) {
       await prisma.incident.update({
-        where: { id: activeIncident.id },
-        data: { 
-          endedAt: new Date(), 
-          status: "Resolved"
-        }
+        where: { id: incident.id },
+        data: { endedAt: new Date(), status: "Resolved" }
       })
-
-      const duration = Date.now() - activeIncident.startedAt.getTime()
-      const durationMin = Math.floor(duration / 60000)
-
-      console.log(`✅ INCIDENT RESOLVED - Website ${websiteId}: Lasted ${durationMin} minutes`)
-      
-      return {
-        incidentCreated: false,
-        incidentResolved: true,
-        message: `Incident resolved after ${durationMin} minutes`
-      }
-    }
-
-    return {
-      incidentCreated: false,
-      incidentResolved: false,
-      message: activeIncident 
-        ? `Incident ongoing: ${downRegions.length}/${totalRegions} regions still down`
-        : `Healthy: ${totalRegions - downRegions.length}/${totalRegions} regions up`
+      console.log(`RESOLVED: ${websiteId}`)
     }
 
   } catch (error) {
-    console.error(`Error checking incident for website ${websiteId}:`, error)
-    return {
-      incidentCreated: false,
-      incidentResolved: false,
-      message: `Error during incident check: ${error instanceof Error ? error.message : 'Unknown error'}`
-    }
+    console.error(`Error checking ${websiteId}:`, error)
   }
 }
