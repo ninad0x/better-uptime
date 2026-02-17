@@ -1,10 +1,12 @@
 import { getMonitorData } from "@/lib/getMonitorData"
 import { redirect } from "next/navigation"
-import { MonitorHeader } from "./_components/monitorHeader"
-import { StatsCards } from "./_components/statsCards"
-import { UptimeChart } from "./_components/uptimeChart"
-import { ResponseTimeChart } from "./_components/responseTimeChart"
-import { IncidentsList } from "./_components/incidentList"
+import MonitorHeader from "./_components/monitorHeader"
+import RegionCards from "./_components/regionCards"
+import RegionalLatency from "./_components/regionLatencyGraph"
+import UptimeOverview from "./_components/uptimeOverview"
+import IncidentTimeline from "./_components/incidentList"
+import LatencyTrend from "./_components/latencyTrend"
+
 
 
 export default async function MonitorPage({params}: { params: Promise<{ id: string}> }) {
@@ -16,27 +18,15 @@ export default async function MonitorPage({params}: { params: Promise<{ id: stri
     }
 
     return (
-        <div className="flex flex-col mx-auto p-4 max-w-5xl gap-8">
-            <MonitorHeader 
-                name={data.website.name}
-                url={data.website.url}
-                currentStatus={data.website.currentStatus}
-                lastChecked={data.website.lastChecked}
-            />
-            
-            <StatsCards 
-                uptime24h={data.uptime.h24}
-                uptime7d={data.uptime.d7}
-                uptime30d={data.uptime.d30}
-                avgResponseTime={data.metrics[0]?.avgResponseTimeMs || null}
-                incidentCount={data.incidents.length}
-            />
-            
-            <UptimeChart data={data.metrics} />
-            
-            <ResponseTimeChart data={data.recentTicks} />
-            
-            <IncidentsList incidents={data.incidents} />
+        <div className="bg-gray-50/50">
+            <div className="flex flex-col mx-auto h-full max-w-5xl bg-gray-50 border">
+                <MonitorHeader data={data} />
+                <RegionCards data={data} />
+                <RegionalLatency data={data} />
+                <LatencyTrend data={data} />
+                <UptimeOverview data={data}/>
+                <IncidentTimeline data={data}/>
+            </div>
         </div>
     )
 }
