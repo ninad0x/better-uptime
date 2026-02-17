@@ -1,4 +1,5 @@
 import z from "zod";
+import { Prisma } from "../../../packages/db/generated/prisma/client";
 
 export const signUpSchema = z.object({
     email: z.email(),
@@ -25,8 +26,56 @@ export const WebsiteTickBatch = z.object({
     results: z.array(WebsiteTickSchema)
 })
 
+
+export type MonitorData = {
+  website: Prisma.WebsiteGetPayload<{
+    select: {
+      id: true
+      name: true
+      url: true
+      currentStatus: true
+      lastChecked: true
+    }
+  }>
+
+  metrics: Prisma.WebsiteMetricGetPayload<{
+    select: {
+      windowStart: true,
+      uptimePercent: true,
+      regionsDownList: true,
+      avgResponseTimeMs: true,
+      regionsDownCount: true
+    }
+  }>[]
+
+  incidents: Prisma.IncidentGetPayload<{}>[]
+
+
+  regionTicks: Prisma.WebsiteTickGetPayload<{
+    select: {
+      createdAt: true
+      responseTimeMs: true
+      region: { select: { name: true } }
+    }
+  }>[]
+
+  regionSummary: {
+    name: string;
+    avgLatency: number;
+    totalChecks: number;
+  }[]
+
+  uptime: {
+    h24: number
+    d7: number
+    d30: number
+  }
+
+}
+
 export type signUpValues = z.infer<typeof signUpSchema>
 export type signInValues = z.infer<typeof signInSchema>
 export type WebsiteTickType = z.infer<typeof WebsiteTickSchema>
+export type MonitorProps = { data: MonitorData }
 
 
