@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { authClient } from "@/lib/authClient"
+import { authClient } from "@repo/auth/client"
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -36,33 +36,13 @@ export default function Page() {
     }
   }
 
-  async function handleSocialSignIn(provider: "google" | "github") {
-    const { error } = await authClient.signIn.social({
-      provider: provider,
-      callbackURL: "http://localhost:3000/dashboard"
+  const signInWithGoogle = async () => {
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/dashboard"
     })
-
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("sign In success");
-    }
-  }
-
-  async function handleSocialSignOut(provider: "google" | "github") {
-    const { error } = await authClient.signIn.social({
-      provider: provider,
-      callbackURL: "http://localhost:3000/dashboard"
-    })
-
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("sign In success");
-    }
   }
    
-
   return (
     <div className="p-4 mt-30 max-w-100 mx-auto">
       <Form {...form}>
@@ -103,7 +83,7 @@ export default function Page() {
         </form>
       </Form>
 
-      <Button onClick={() => handleSocialSignIn("google")} className="mt-5">Google</Button>
+      <Button onClick={signInWithGoogle} className="mt-5">Google</Button>
     </div>
   )
 }

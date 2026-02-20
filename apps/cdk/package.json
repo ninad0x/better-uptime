@@ -19,9 +19,11 @@
     "ts-jest": "^29.2.5",
     "aws-cdk": "2.1033.0",
     "ts-node": "^10.9.2",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "@repo/db": "workspace:*"
   },
   "dependencies": {
+    "@aws-sdk/client-sqs": "^3.974.0",
     "@aws-sdk/client-ssm": "^3.948.0",
     "aws-cdk-lib": "2.215.0",
     "constructs": "^10.0.0"

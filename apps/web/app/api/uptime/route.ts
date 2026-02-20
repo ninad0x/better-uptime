@@ -39,9 +39,8 @@ export async function POST(req: Request) {
 
     const websiteIds = [...new Set(ticks.map(t => t.websiteId))];
 
-    for (const websiteId of websiteIds) {
-      checkIncidentForWebsite(websiteId);
-    }
+    Promise.all(websiteIds.map(id => checkIncidentForWebsite(id)))
+      .catch(err => console.error("Incident check error: ", err))
 
     return NextResponse.json({ success: true });
     

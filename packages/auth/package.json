@@ -7,8 +7,8 @@
     "@types/bun": "latest"
   },
   "exports": {
-    "./auth": "./auth.ts",
-    "./index": "./index.ts"
+    "./client": "./authClient.ts",
+    "./server": "./auth.ts"
   },
   "peerDependencies": {
     "typescript": "^5"

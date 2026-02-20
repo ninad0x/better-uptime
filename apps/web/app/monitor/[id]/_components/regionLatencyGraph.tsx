@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Legend,
 } from "recharts"
 
 export default function RegionalLatency({ data }: MonitorProps) {
@@ -53,6 +54,7 @@ export default function RegionalLatency({ data }: MonitorProps) {
               }}
               labelFormatter={(time) => new Date(Number(time)).toLocaleTimeString()}
             />
+            {/* <Legend itemSorter={"dataKey"} /> */}
             {regions.map((region, index) => {
               const regionData = data.regionTicks
                 .filter(t => t.region?.name === region)

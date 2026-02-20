@@ -1,22 +1,43 @@
-const { SQSClient, SendMessageCommand } = require("@aws-sdk/client-sqs");
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 const sqs = new SQSClient({});
 
-exports.handler = async () => {
+const BACKEND_URL = process.env.BACKEND_URL || "https://623085b8ec1b.ngrok-free.app";
 
-  const response = await fetch(`https://b009162970b0.ngrok-free.app/websites`);   // temp url
-  const data = await response.json();
-  const websites = (data as any).websites.map((w:any) => ({ 
-    url: w.url,
-    id: w.id
-  }));
+export const handler = async () => {
+  try {
+    const response = await fetch(`${BACKEND_URL}/websites`, { 
+      signal: AbortSignal.timeout(5000)
+    });
 
-  await sqs.send(
-    new SendMessageCommand({
+    if (!response.ok) {
+      throw new Error(`Backend fetch failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    const list = (data as any).websites || []; 
+
+    const payload = list.map((w: any) => ({ 
+      id: w.id, 
+      url: w.url 
+    }));
+
+    if (payload.length === 0) {
+      console.log("No websites to check.");
+      return "Skipped";
+    }
+
+    await sqs.send(new SendMessageCommand({
       QueueUrl: process.env.QUEUE_URL,
-      MessageBody: JSON.stringify(websites),
-    })
-  );
+      MessageBody: JSON.stringify(payload),
+    }));
 
-  return "OK";
+    console.log(`Successfully queued ${payload.length} sites.`);
+    return "OK";
+
+  } catch (error) {
+    console.error("Producer Error:", error);
+    throw error;
+  }
 };

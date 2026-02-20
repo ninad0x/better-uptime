@@ -73,6 +73,19 @@ export type MonitorData = {
 
 }
 
+export type CardData = {
+  uptime24h: number;
+  avgResponseTime: number | null;
+  id: string;
+  url: string;
+  name: string;
+  currentStatus: number;
+  lastChecked: Date | null;
+  incidents: {
+      id: string;
+  }[];
+}
+
 export type signUpValues = z.infer<typeof signUpSchema>
 export type signInValues = z.infer<typeof signInSchema>
 export type WebsiteTickType = z.infer<typeof WebsiteTickSchema>
