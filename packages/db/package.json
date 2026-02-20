@@ -11,7 +11,8 @@
     "./client": "./index.ts"
   },
   "scripts": {
-    "studio": "bun prisma studio"
+    "studio": "bun prisma studio",
+    "generate": "prisma generate"
   },
   "private": true,
   "type": "module",
