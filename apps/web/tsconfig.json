@@ -17,7 +17,7 @@
     "next-env.d.ts",
     "next.config.js",
     ".next/types/**/*.ts"
-  ],
+, "../api/lib/getSession.ts", "../../packages/store/seedIncident.ts", "../../packages/auth/authClient.ts"  ],
   "exclude": [
     "node_modules"
   ]

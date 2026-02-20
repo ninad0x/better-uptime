@@ -5,7 +5,7 @@ import "./globals.css";
 const manrope = Manrope({})
 
 export const metadata: Metadata = {
-  title: "Better Uptime",
+  title: "Sentinel Uptime Monitor",
   description: "Check your website status across the globe",
 };
 

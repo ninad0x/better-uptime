@@ -15,7 +15,7 @@ export class UptimeStack extends cdk.Stack {
     const queue = new sqs.Queue(this, "RegionQueue");
 
     const worker = new lambda.Function(this, "WorkerFn", {
-      runtime: lambda.Runtime.NODEJS_18_X,
+      runtime: lambda.Runtime.NODEJS_20_X,
       handler: "worker.handler",
       code: lambda.Code.fromAsset("lambdas"),
       timeout: cdk.Duration.seconds(30),
@@ -25,7 +25,7 @@ export class UptimeStack extends cdk.Stack {
     queue.grantConsumeMessages(worker);
 
     const scheduler = new lambda.Function(this, "SchedulerFn", {
-      runtime: lambda.Runtime.NODEJS_18_X,
+      runtime: lambda.Runtime.NODEJS_20_X,
       handler: "scheduler.handler",
       code: lambda.Code.fromAsset("lambdas"),
       timeout: cdk.Duration.seconds(30),
