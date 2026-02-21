@@ -12,7 +12,7 @@
   },
   "scripts": {
     "studio": "bun prisma studio",
-    "generate": "prisma generate"
+    "build": "prisma generate"
   },
   "private": true,
   "type": "module",
